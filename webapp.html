@@ -1,153 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Rock Paper Scissors</title>
+  <meta charset="UTF-8">
+  <title>Matching Game</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
+      font-family: sans-serif;
+      background-color: #f0f8ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
       padding: 2rem;
-      background-color: #f0bdbd;
-      color: #333;
+      position: relative;
+      overflow: hidden;
     }
 
     h1 {
-      margin-bottom: 0.5rem;
+      margin-bottom: 1rem;
     }
 
-    .scoreboard {
-      margin: 1rem 0;
-      font-size: 1.2rem;
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      gap: 10px;
     }
 
-    .buttons button {
-      margin: 0.5rem;
-      padding: 1rem 2rem;
-      font-size: 1rem;
-      cursor: pointer;
-      border: none;
+    .card {
+      width: 100px;
+      height: 100px;
+      background-color: #fff;
+      border: 2px solid #ccc;
       border-radius: 8px;
-      background-color: #e0e0e0;
-      transition: background-color 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: background 0.3s;
     }
 
-    .buttons button:hover {
-      background-color: #c0c0c0;
+    .card.matched {
+      background-color: #d4edda;
+      cursor: default;
     }
 
-    .result, .final-result {
-      margin-top: 1rem;
-      font-size: 1.2rem;
-      font-weight: bold;
+    .card.flipped {
+      background-color: #fff8dc;
     }
 
-    .final-result {
-      color: #0077cc;
-    }
-
-    .hidden {
+    #winMessage {
       display: none;
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ffffff;
+      padding: 30px 40px;
+      border: 2px solid #4caf50;
+      border-radius: 12px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #4caf50;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      text-align: center;
     }
 
-    .reset {
-      margin-top: 1.5rem;
-      display: inline-block;
-      padding: 0.5rem 1.5rem;
-      font-size: 1rem;
-      background-color: #ffc0cb;
-      color: #333;
+    #winMessage button {
+      margin-top: 1rem;
+      padding: 10px 20px;
+      font-size: 16px;
       border: none;
+      background-color: #4caf50;
+      color: white;
       border-radius: 8px;
       cursor: pointer;
     }
 
-    .reset:hover {
-      background-color: #f4aabb;
+    .links {
+      margin-top: 20px;
+      font-size: 16px;
+    }
+
+    .links a {
+      text-decoration: none;
+      color: #0077cc;
+      margin: 0 8px;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    canvas#confettiCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 999;
     }
   </style>
 </head>
 <body>
-  <h1>Rock 🪨 Paper 📄 Scissors ✂️</h1>
-  <p>First to 5 wins!</p>
+  <h1>Matching Game</h1>
 
+  <div class="game-board" id="gameBoard"></div>
+
+  <!-- Navigation Links -->
   <div class="links">
     <a href="resume.html">← Back to Resume</a> |
     <a href="index.html">Back to Scratch Page</a>
-  
-  <div class="scoreboard">
-    You: <span id="playerScore">0</span> &nbsp;|&nbsp;
-    Computer: <span id="computerScore">0</span>
   </div>
 
-  <div class="buttons">
-    <button onclick="playRound('rock')">🪨 Rock</button>
-    <button onclick="playRound('paper')">📄 Paper</button>
-    <button onclick="playRound('scissors')">✂️ Scissors</button>
+  <div id="winMessage">
+    🎉 Congratulations, you won!! 🎉<br>
+    <button onclick="resetGame()">Play Again</button>
   </div>
 
-  <div class="result" id="roundResult"></div>
-  <div class="final-result hidden" id="finalResult"></div>
-  <button class="reset hidden" id="resetButton" onclick="resetGame()">Play Again</button>
+  <canvas id="confettiCanvas"></canvas>
 
   <script>
-    let playerScore = 0;
-    let computerScore = 0;
+    const originalEmojis = ['🍎', '🍌', '🍇', '🍉', '🍓', '🍍', '🍒', '🥝'];
+    let emojis = [];
+    let cards = [];
+    let flippedCards = [];
+    let matchedCount = 0;
 
-    function computerPlay() {
-      const choices = ['rock', 'paper', 'scissors'];
-      return choices[Math.floor(Math.random() * choices.length)];
+    const gameBoard = document.getElementById('gameBoard');
+    const winMessage = document.getElementById('winMessage');
+    const confettiCanvas = document.getElementById('confettiCanvas');
+    const ctx = confettiCanvas.getContext('2d');
+    let confettiParticles = [];
+    let animationFrameId;
+
+    function shuffle(array) {
+      return [...array].sort(() => 0.5 - Math.random());
     }
 
-    function playRound(playerSelection) {
-      if (playerScore >= 5 || computerScore >= 5) return;
+    function createCard(emoji) {
+      const card = document.createElement('div');
+      card.classList.add('card');
+      card.dataset.emoji = emoji;
+      card.innerText = '❓';
 
-      const computerSelection = computerPlay();
-      let resultText = `You chose ${emoji(playerSelection)}, Computer chose ${emoji(computerSelection)}. `;
+      card.addEventListener('click', () => {
+        if (card.classList.contains('flipped') || card.classList.contains('matched') || flippedCards.length === 2) return;
 
-      if (playerSelection === computerSelection) {
-        resultText += "It's a tie!";
-      } else if (
-        (playerSelection === 'rock' && computerSelection === 'scissors') ||
-        (playerSelection === 'paper' && computerSelection === 'rock') ||
-        (playerSelection === 'scissors' && computerSelection === 'paper')
-      ) {
-        playerScore++;
-        resultText += "You win this round!";
-      } else {
-        computerScore++;
-        resultText += "Computer wins this round!";
-      }
+        card.innerText = emoji;
+        card.classList.add('flipped');
+        flippedCards.push(card);
 
-      document.getElementById('playerScore').textContent = playerScore;
-      document.getElementById('computerScore').textContent = computerScore;
-      document.getElementById('roundResult').textContent = resultText;
+        if (flippedCards.length === 2) {
+          const [first, second] = flippedCards;
+          if (first.dataset.emoji === second.dataset.emoji) {
+            first.classList.add('matched');
+            second.classList.add('matched');
+            matchedCount += 2;
+            if (matchedCount === cards.length) {
+              winMessage.style.display = 'block';
+              launchConfetti();
+            }
+          } else {
+            setTimeout(() => {
+              first.innerText = '❓';
+              second.innerText = '❓';
+              first.classList.remove('flipped');
+              second.classList.remove('flipped');
+            }, 800);
+          }
+          flippedCards = [];
+        }
+      });
 
-      if (playerScore === 5 || computerScore === 5) {
-        const winner = playerScore === 5 ? "You" : "Computer";
-        document.getElementById('finalResult').textContent = `${winner} win the game! 🎉`;
-        document.getElementById('finalResult').classList.remove('hidden');
-        document.getElementById('resetButton').classList.remove('hidden');
-      }
+      return card;
+    }
+
+    function setupGame() {
+      emojis = shuffle(originalEmojis);
+      cards = shuffle([...emojis, ...emojis]);
+      cards.forEach(emoji => {
+        const cardElement = createCard(emoji);
+        gameBoard.appendChild(cardElement);
+      });
     }
 
     function resetGame() {
-      playerScore = 0;
-      computerScore = 0;
-      document.getElementById('playerScore').textContent = playerScore;
-      document.getElementById('computerScore').textContent = computerScore;
-      document.getElementById('roundResult').textContent = '';
-      document.getElementById('finalResult').textContent = '';
-      document.getElementById('finalResult').classList.add('hidden');
-      document.getElementById('resetButton').classList.add('hidden');
+      // Reset state
+      gameBoard.innerHTML = '';
+      flippedCards = [];
+      matchedCount = 0;
+      winMessage.style.display = 'none';
+
+      cancelAnimationFrame(animationFrameId);
+      confettiParticles = [];
+      ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+      setupGame();
     }
 
-    function emoji(choice) {
-      if (choice === 'rock') return '🪨';
-      if (choice === 'paper') return '📄';
-      return '✂️';
+    function launchConfetti() {
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+
+      confettiParticles = [];
+      for (let i = 0; i < 150; i++) {
+        confettiParticles.push({
+          x: Math.random() * confettiCanvas.width,
+          y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+          size: Math.random() * 8 + 2,
+          speedY: Math.random() * 3 + 2,
+          color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        for (let p of confettiParticles) {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function update() {
+        for (let p of confettiParticles) {
+          p.y += p.speedY;
+          if (p.y > confettiCanvas.height) {
+            p.y = -10;
+            p.x = Math.random() * confettiCanvas.width;
+          }
+        }
+      }
+
+      function animate() {
+        draw();
+        update();
+        animationFrameId = requestAnimationFrame(animate);
+      }
+
+      animate();
     }
+
+    setupGame();
   </script>
 </body>
 </html>
