@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rock Paper Scissors</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 2rem;
+      background-color: #f0bdbd;
+      color: #333;
+    }
+
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+
+    .scoreboard {
+      margin: 1rem 0;
+      font-size: 1.2rem;
+    }
+
+    .buttons button {
+      margin: 0.5rem;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background-color: #e0e0e0;
+      transition: background-color 0.3s;
+    }
+
+    .buttons button:hover {
+      background-color: #c0c0c0;
+    }
+
+    .result, .final-result {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .final-result {
+      color: #0077cc;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .reset {
+      margin-top: 1.5rem;
+      display: inline-block;
+      padding: 0.5rem 1.5rem;
+      font-size: 1rem;
+      background-color: #ffc0cb;
+      color: #333;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .reset:hover {
+      background-color: #f4aabb;
+    }
+  </style>
+</head>
+<body>
+  <h1>Rock 🪨 Paper 📄 Scissors ✂️</h1>
+  <p>First to 5 wins!</p>
+
+  <div class="links">
+    <a href="Resume.html">← Back to Resume</a> |
+    <a href="Index.html">Back to Scratch Page</a>
+  
+  <div class="scoreboard">
+    You: <span id="playerScore">0</span> &nbsp;|&nbsp;
+    Computer: <span id="computerScore">0</span>
+  </div>
+
+  <div class="buttons">
+    <button onclick="playRound('rock')">🪨 Rock</button>
+    <button onclick="playRound('paper')">📄 Paper</button>
+    <button onclick="playRound('scissors')">✂️ Scissors</button>
+  </div>
+
+  <div class="result" id="roundResult"></div>
+  <div class="final-result hidden" id="finalResult"></div>
+  <button class="reset hidden" id="resetButton" onclick="resetGame()">Play Again</button>
+
+  <script>
+    let playerScore = 0;
+    let computerScore = 0;
+
+    function computerPlay() {
+      const choices = ['rock', 'paper', 'scissors'];
+      return choices[Math.floor(Math.random() * choices.length)];
+    }
+
+    function playRound(playerSelection) {
+      if (playerScore >= 5 || computerScore >= 5) return;
+
+      const computerSelection = computerPlay();
+      let resultText = `You chose ${emoji(playerSelection)}, Computer chose ${emoji(computerSelection)}. `;
+
+      if (playerSelection === computerSelection) {
+        resultText += "It's a tie!";
+      } else if (
+        (playerSelection === 'rock' && computerSelection === 'scissors') ||
+        (playerSelection === 'paper' && computerSelection === 'rock') ||
+        (playerSelection === 'scissors' && computerSelection === 'paper')
+      ) {
+        playerScore++;
+        resultText += "You win this round!";
+      } else {
+        computerScore++;
+        resultText += "Computer wins this round!";
+      }
+
+      document.getElementById('playerScore').textContent = playerScore;
+      document.getElementById('computerScore').textContent = computerScore;
+      document.getElementById('roundResult').textContent = resultText;
+
+      if (playerScore === 5 || computerScore === 5) {
+        const winner = playerScore === 5 ? "You" : "Computer";
+        document.getElementById('finalResult').textContent = `${winner} win the game! 🎉`;
+        document.getElementById('finalResult').classList.remove('hidden');
+        document.getElementById('resetButton').classList.remove('hidden');
+      }
+    }
+
+    function resetGame() {
+      playerScore = 0;
+      computerScore = 0;
+      document.getElementById('playerScore').textContent = playerScore;
+      document.getElementById('computerScore').textContent = computerScore;
+      document.getElementById('roundResult').textContent = '';
+      document.getElementById('finalResult').textContent = '';
+      document.getElementById('finalResult').classList.add('hidden');
+      document.getElementById('resetButton').classList.add('hidden');
+    }
+
+    function emoji(choice) {
+      if (choice === 'rock') return '🪨';
+      if (choice === 'paper') return '📄';
+      return '✂️';
+    }
+  </script>
+</body>
+</html>
