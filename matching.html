@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Matching Game</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f8ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin-bottom: 1rem;
+    }
+
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      gap: 10px;
+    }
+
+    .card {
+      width: 100px;
+      height: 100px;
+      background-color: #fff;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .card.matched {
+      background-color: #d4edda;
+      cursor: default;
+    }
+
+    .card.flipped {
+      background-color: #fff8dc;
+    }
+
+    #winMessage {
+      display: none;
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ffffff;
+      padding: 30px 40px;
+      border: 2px solid #4caf50;
+      border-radius: 12px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #4caf50;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      text-align: center;
+    }
+
+    #winMessage button {
+      margin-top: 1rem;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background-color: #4caf50;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .links {
+      margin-top: 20px;
+      font-size: 16px;
+    }
+
+    .links a {
+      text-decoration: none;
+      color: #0077cc;
+      margin: 0 8px;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    canvas#confettiCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <h1>Matching Game</h1>
+
+  <div class="game-board" id="gameBoard"></div>
+
+  <!-- Navigation Links -->
+  <div class="links">
+    <a href="resume.html">← Back to Resume</a> |
+    <a href="index.html">Back to Scratch Page</a>
+  </div>
+
+  <div id="winMessage">
+    🎉 Congratulations, you won!! 🎉<br>
+    <button onclick="resetGame()">Play Again</button>
+  </div>
+
+  <canvas id="confettiCanvas"></canvas>
+
+  <script>
+    const originalEmojis = ['🍎', '🍌', '🍇', '🍉', '🍓', '🍍', '🍒', '🥝'];
+    let emojis = [];
+    let cards = [];
+    let flippedCards = [];
+    let matchedCount = 0;
+
+    const gameBoard = document.getElementById('gameBoard');
+    const winMessage = document.getElementById('winMessage');
+    const confettiCanvas = document.getElementById('confettiCanvas');
+    const ctx = confettiCanvas.getContext('2d');
+    let confettiParticles = [];
+    let animationFrameId;
+
+    function shuffle(array) {
+      return [...array].sort(() => 0.5 - Math.random());
+    }
+
+    function createCard(emoji) {
+      const card = document.createElement('div');
+      card.classList.add('card');
+      card.dataset.emoji = emoji;
+      card.innerText = '❓';
+
+      card.addEventListener('click', () => {
+        if (card.classList.contains('flipped') || card.classList.contains('matched') || flippedCards.length === 2) return;
+
+        card.innerText = emoji;
+        card.classList.add('flipped');
+        flippedCards.push(card);
+
+        if (flippedCards.length === 2) {
+          const [first, second] = flippedCards;
+          if (first.dataset.emoji === second.dataset.emoji) {
+            first.classList.add('matched');
+            second.classList.add('matched');
+            matchedCount += 2;
+            if (matchedCount === cards.length) {
+              winMessage.style.display = 'block';
+              launchConfetti();
+            }
+          } else {
+            setTimeout(() => {
+              first.innerText = '❓';
+              second.innerText = '❓';
+              first.classList.remove('flipped');
+              second.classList.remove('flipped');
+            }, 800);
+          }
+          flippedCards = [];
+        }
+      });
+
+      return card;
+    }
+
+    function setupGame() {
+      emojis = shuffle(originalEmojis);
+      cards = shuffle([...emojis, ...emojis]);
+      cards.forEach(emoji => {
+        const cardElement = createCard(emoji);
+        gameBoard.appendChild(cardElement);
+      });
+    }
+
+    function resetGame() {
+      // Reset state
+      gameBoard.innerHTML = '';
+      flippedCards = [];
+      matchedCount = 0;
+      winMessage.style.display = 'none';
+
+      cancelAnimationFrame(animationFrameId);
+      confettiParticles = [];
+      ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+      setupGame();
+    }
+
+    function launchConfetti() {
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+
+      confettiParticles = [];
+      for (let i = 0; i < 150; i++) {
+        confettiParticles.push({
+          x: Math.random() * confettiCanvas.width,
+          y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+          size: Math.random() * 8 + 2,
+          speedY: Math.random() * 3 + 2,
+          color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        for (let p of confettiParticles) {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function update() {
+        for (let p of confettiParticles) {
+          p.y += p.speedY;
+          if (p.y > confettiCanvas.height) {
+            p.y = -10;
+            p.x = Math.random() * confettiCanvas.width;
+          }
+        }
+      }
+
+      function animate() {
+        draw();
+        update();
+        animationFrameId = requestAnimationFrame(animate);
+      }
+
+      animate();
+    }
+
+    setupGame();
+  </script>
+</body>
+</html>
+
