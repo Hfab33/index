@@ -39,3 +39,8 @@ body {
     border-radius: 10px;
     margin-bottom: 15px;
   }
+
+.lists ul li {
+  font-weight: bold;
+  color: pink;
+}
